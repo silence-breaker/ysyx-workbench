@@ -62,3 +62,10 @@ else
 # Include rules to build NEMU
 include $(NEMU_HOME)/scripts/native.mk
 endif
+
+.PHONY: count count-non-empty
+count:
+	@find $(NEMU_HOME)/src $(NEMU_HOME)/include -name "*.c" -o -name "*.h" | xargs cat | wc -l
+
+count-non-empty:
+	@find $(NEMU_HOME)/src $(NEMU_HOME)/include -name "*.c" -o -name "*.h" | xargs cat | grep -v '^[[:space:]]*$$' | wc -l

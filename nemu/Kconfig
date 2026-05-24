@@ -126,6 +126,12 @@ endmenu
 
 menu "Testing and Debugging"
 
+config WATCHPOINT
+  bool "Enable watchpoint"
+  default n
+  help
+    Enable watchpoint to monitor the value changes of given expressions.
+    When this option is turned off, the performance of NEMU can be improved.
 
 config TRACE
   bool "Enable tracer"

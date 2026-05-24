@@ -24,8 +24,24 @@ const char *regs[] = {
 };
 
 void isa_reg_display() {
+  int i = 0;
+  for (i = 0; i < 32; i ++) {
+    printf("%s = 0x%08x\n", regs[i], cpu.gpr[i]);//以8位十六进制数的形式打印寄存器值
+  }
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
+  int i = 0;
+  for (i = 0; i < 32; i ++) {
+    if (strcmp(s, regs[i]) == 0) {
+      *success = true;
+      return cpu.gpr[i];
+    }
+  }
+  if (strcmp(s, "pc") == 0) {
+    *success = true;
+    return cpu.pc;
+  }
+  *success = false;
   return 0;
 }

@@ -17,7 +17,8 @@
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
-
+#include "../../monitor/sdb/watchpoint.h"
+#include "../monitor/sdb/expr.h"
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -35,9 +36,39 @@ void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
+  //ITRACE_COND宏定义，用来控制是否记录指令追踪
+  //_this->logbuf，存的是当前指令的汇编代码字符串
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
+  //g+print_step是一个全局变量，用来控制是否打印指令追踪
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+
+#ifdef CONFIG_WATCHPOINT
+  //在扫描监视点的过程中, 
+  //你需要对监视点的相应表达式进行求值(你之前已经实现表达式求值的功能了), 
+  //并比较它们的值有没有发生变化, 
+  //若发生了变化, 程序就因触发了监视点而暂停下来,
+  // 你需要将nemu_state.state变量设置为NEMU_STOP来达到暂停的效果. 
+  //最后输出一句话提示用户触发了监视点, 并返回到sdb_mainloop()循环中等待用户的命令.
+  WP* wp = get_wp_head();
+  while (wp != NULL) {
+    bool success = true;
+    word_t new_val = expr(wp->expr, &success);
+    if (!success) {
+      printf("Failed to evaluate watchpoint expression: %s\n", wp->expr);
+      return;
+    }
+    if (new_val != wp->val) {
+      printf("Watchpoint %d triggered: %s\n", wp->NO, wp->expr);
+      printf("Old value = 0x%08x\n", wp->val);
+      printf("New value = 0x%08x\n", new_val);
+      wp->val = new_val;
+      nemu_state.state = NEMU_STOP;
+      return;
+    }
+    wp = wp->next;
+  }
+#endif
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
